@@ -1,112 +1,637 @@
+"use client";
 import Image from "next/image";
+import React, { useEffect, useState } from "react";
+
+//import Datepicker from "react-tailwindcss-datepicker";
 
 export default function Home() {
+  const [value, setValue] = useState({
+    startDate: new Date(),
+    endDate: new Date().setMonth(11),
+  });
+
+  const [form, setForm] = useState({
+    total: "",
+    valorAnterior: 0,
+    valorAtual: 0,
+    parcelasAnteriores: 0,
+    parcelasAtuais: 0,
+    DIB: "",
+    DIP: "",
+    principal: "",
+    percentual: "30",
+    juros: "",
+    tjuros: "",
+    vAdvogado: 0,
+    vAutor: 0,
+    jurosAutor: 0,
+    jurosAdvogado: 0,
+    vHerdeiro: 0,
+    jurosHerdeiro: 0,
+  });
+  const [formProc, setFormProc] = useState({
+    processo: "",
+    usuario: "",
+    password: "",
+  });
+
+  /* const handleValueChange = (newValue) => {
+    console.log("newValue:", newValue);
+    setValue(newValue);
+ 
+    
+}*/
+
+  function handleValores(e) {
+    setForm({ ...form, [e.target.name]: e.target.value });
+    const { numeroSequencial, numeroDigitoVerificadorAnoRespectivoTribunal } =
+      formProc.processo.trim().split("-");
+    console.log(numeroSequencial);
+  }
+
+  function handleProc(e) {
+    setFormProc({ ...formProc, [e.target.name]: e.target.value });
+  }
+  console.log;
+  function handleLimpar(e) {
+    setForm({
+      total: "",
+      valorAnterior: 0,
+      valorAtual: 0,
+      parcelasAnteriores: 0,
+      parcelasAtuais: 0,
+      DIB: "",
+      DIP: "",
+      principal: "",
+      percentual: "",
+      juros: "",
+      vAdvogado: "",
+      vAutor: "",
+      qtHerdeiros: "",
+      vHerdeiro: "",
+      jurosHerdeiro: "",
+      jurosAutor: "",
+      jurosAdvogado: "",
+    });
+  }
+  async function handleBuscaDados(e) {
+    e.preventDefault();
+    console.log("Buscando dados...");
+    try {
+      const dados = await fetch("api/dados", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formProc),
+      });
+      const response = await dados.json();
+      const { DadosJson } = response;
+      const Dados = JSON.parse(DadosJson);
+      console.log(Dados.DIB);
+      setForm({
+        ...form,
+        DIB: Dados.DIB,
+        DIP: Dados.DIP,
+        total: Dados.valor,
+      });
+      //handleCalcular()
+    } catch (error) {
+      console.log("Erro em page: " +error);
+    }
+  }
+
+  function handleCalcular() {
+  
+
+    const { total, DIB, DIP, principal, juros } = form;
+
+    let valorPrincAutor = 0;
+    let valorPrincAdv = 0;
+    let valorJurosAutor = 0;
+    let valorJurosAdv = 0;
+    let valorTotal = 0;
+    let totalSemJuros = parseFloat(
+      form.total.trim().replace(/\./g, "").replace(",", ".")
+    );
+    let tPrincipal = parseFloat(
+      form.principal.trim().replace(/\./g, "").replace(",", ".")
+    );
+    let tPercentual = parseInt(form.percentual.trim());
+
+    let tJuros = parseFloat(
+      form.juros.trim().replace(/\./g, "").replace(",", ".")
+    );
+
+    if (principal.length !== 0 && tPercentual !== "" && juros.length !== 0) {
+      tPrincipal = tPrincipal;
+      valorPrincAutor = tPrincipal * (1 - tPercentual / 100);
+      valorPrincAdv = (tPercentual / 100) * tPrincipal;
+      valorJurosAutor = tJuros * (1 - tPercentual / 100);
+      valorJurosAdv = (tPercentual / 100) * tJuros;
+      valorTotal = parseFloat(tPrincipal) + parseFloat(tJuros);
+      console.log(principal);
+      console.log("Com juros");
+    } else if (principal.length === 0 && juros.length === 0) {
+      valorPrincAutor = totalSemJuros * (1 - tPercentual / 100);
+      valorPrincAdv = (tPercentual / 100) * totalSemJuros;
+      valorJurosAutor = 0;
+      valorJurosAdv = 0;
+      valorTotal = parseFloat(totalSemJuros);
+
+      console.log("Sem juros");
+      console.log(valorTotal);
+    }
+
+    const dataAtual = new Date().toISOString().substring(0, 10);
+    const lDataAtual = dataAtual.trim().split("-");
+    const lDIB = DIB.trim().split("/");
+    const lDIP = DIP.trim().split("/");
+    let exerDIP =
+      lDIP[2] < lDataAtual[0]
+        ? (parseInt(lDIP[lDIP.length - 1]) - lDIB[lDIB.length - 1]) * 13 +
+          (parseInt(lDIP[1]) - 13)
+        : parseInt(lDIP[1]);
+
+    let exerDIB =
+      lDIB[2] < lDataAtual[0]
+        ? (parseInt(lDIP[lDIP.length - 1]) - lDIB[lDIB.length - 1]) * 13 + 1
+        : parseInt(lDIP[1]);
+    const vtotal = parseFloat(total.replace(/\./g, "").replace(",", "."));
+    let pAnteriores = 0;
+    let pAtuais = 0;
+
+    if (lDIB[2] < lDataAtual[0] && lDIP[2] < lDataAtual[0]) {
+      pAnteriores = exerDIB + exerDIP;
+      pAtuais = 0;
+    } else if (lDIB[2] >= lDataAtual[0] && lDIP[2] >= lDataAtual[0]) {
+      pAnteriores = 0;
+      pAtuais = parseInt(lDIP[1]) - parseInt(lDIB[1]) + 1;
+    } else if (lDIB[2] < lDataAtual[0] && lDIP[2] >= lDataAtual[0]) {
+      pAnteriores = exerDIB - parseInt(lDIB[1]);
+      pAtuais = exerDIP;
+    }
+
+    const totalAnterior = parseFloat(
+      (vtotal / (pAtuais + pAnteriores)) * pAnteriores
+    );
+    const totalvAtual = parseFloat(
+      (vtotal / (pAtuais + pAnteriores)) * pAtuais
+    );
+
+    setForm({
+      ...form,
+      parcelasAnteriores: pAnteriores,
+      parcelasAtuais: pAtuais,
+      valorAnterior: totalAnterior.toFixed(2),
+      valorAtual: totalvAtual.toFixed(2),
+      vAutor: valorPrincAutor.toFixed(2),
+      vAdvogado: valorPrincAdv.toFixed(2),
+      jurosAutor: valorJurosAutor.toFixed(2),
+      jurosAdvogado: valorJurosAdv.toFixed(2),
+      principal: valorTotal.toFixed(2),
+    });
+    //console.log(form);
+  }
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
+    <main className="flex min-h-screen flex-rol items-center justify-between p-24">
       <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.js</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
+        <div className="flex-col items-center md:gap-6">
+          <p className="block text-gray-700 text-sm font-bold mb-2">
+            CÁLCULO RPVs
+          </p>
+          <div className="gap-x-10">
+            <button
+              type="submit"
+              onClick={handleCalcular}
+              className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+            >
+              Calcular
+            </button>{" "}
+            <button
+              type="submit"
+              onClick={handleLimpar}
+              className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+            >
+              Limpar
+            </button>
+          </div>
+          <br></br>
+
+          <form>
+            <div className="grid md:grid-cols-3 md:gap-6">
+              <div className="relative z-0 w-full mb-6 group">
+                <p className="block text-gray-700 text-sm font-bold mb-2">
+                  DIB:
+                </p>
+                <input
+                  type="text"
+                  value={form.DIB}
+                  onChange={handleValores}
+                  name="DIB"
+                  id="floating_last_name"
+                  className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                  placeholder=" "
+                  required
+                />
+              </div>
+              <div className="relative z-0 w-full mb-6 group">
+                <p className="block text-gray-700 text-sm font-bold mb-2">
+                  DIP:
+                </p>
+                <input
+                  type="text"
+                  value={form.DIP}
+                  onChange={handleValores}
+                  name="DIP"
+                  id="floating_last_name"
+                  className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                  placeholder=" "
+                  required
+                />
+              </div>
+              <div className="relative z-0 w-full mb-6 group">
+                <p className="block text-gray-700 text-sm font-bold mb-2">
+                  Total:{" "}
+                </p>
+
+                <input
+                  type="text"
+                  value={form.total}
+                  onChange={handleValores}
+                  name="total"
+                  id="floating_first_name"
+                  className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                  placeholder=" "
+                  required
+                />
+              </div>
+            </div>
+            <br></br>
+            <p className="block text-gray-700 text-sm font-bold mb-2">
+              DESTAQUE DE HONORÁRIOS{" "}
+            </p>
+            <br></br>
+            <div className="grid md:grid-cols-4 md:gap-6">
+              <div className="relative z-0 w-full mb-6 group">
+                {/* CÓDIGO PARA INSERIR OS DADOS DE DESTAQUE DE HONORÁRIOS////////////////////////////////////////////////////////////////////////////*/}
+                <p className="block text-gray-700 text-sm font-bold mb-2">
+                  Principal:
+                </p>
+                <input
+                  type="text"
+                  value={form.principal}
+                  onChange={handleValores}
+                  name="principal"
+                  id="floating_last_name"
+                  className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                  placeholder=" "
+                  required
+                />
+              </div>
+              <div className="relative z-0 w-full mb-6 group">
+                <p className="block text-gray-700 text-sm font-bold mb-2">
+                  Honorários %:
+                </p>
+                <input
+                  type="text"
+                  value={form.percentual}
+                  onChange={handleValores}
+                  name="percentual"
+                  id="floating_last_name"
+                  className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                  placeholder=" "
+                  required
+                />
+              </div>
+              <div className="relative z-0 w-full mb-6 group">
+                <p className="block text-gray-700 text-sm font-bold mb-2">
+                  Com Juros:
+                </p>
+                <input
+                  type="text"
+                  value={form.juros}
+                  onChange={handleValores}
+                  name="juros"
+                  id="floating_last_name"
+                  className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                  placeholder=" "
+                  required
+                />
+              </div>
+              <div className="relative z-0 w-full mb-6 group">
+                <p className="block text-gray-700 text-sm font-bold mb-2">
+                  Qt. Herdeiros(Em Construção):
+                </p>
+                <input
+                  type="text"
+                  value={form.qtHerdeiros}
+                  onChange={handleValores}
+                  name="qtHerdeiros"
+                  id="floating_last_name"
+                  className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                  placeholder=" "
+                  required
+                />
+              </div>
+            </div>{" "}
+            <br></br>
+            <p className="block text-gray-700 text-sm font-bold mb-2">
+              Preenchimento da RRA:
+            </p>
+            <br></br>
+            <div className="grid md:grid-cols-2 md:gap-6">
+              <div className="relative z-0 w-full mb-6 group">
+                <input
+                  type="number"
+                  value={form.valorAnterior}
+                  onChange={handleValores}
+                  name="valorAnterior"
+                  id="floating_last_name"
+                  className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                  placeholder=" "
+                  required
+                />
+                <label
+                  htmlFor="floating_last_name"
+                  className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:left-0 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
+                >
+                  Valor Anterior
+                </label>
+              </div>
+              <div className="relative z-0 w-full mb-6 group">
+                <input
+                  type="number"
+                  value={form.parcelasAnteriores}
+                  onChange={handleValores}
+                  name="parcelasAnteriores"
+                  id="floating_last_name"
+                  className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                  placeholder=" "
+                  required
+                />
+                <label
+                  htmlFor="floating_last_name"
+                  className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:left-0 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
+                >
+                  Parcelas anteriores
+                </label>
+              </div>{" "}
+              <div className="relative z-0 w-full mb-6 group">
+                <input
+                  type="number"
+                  value={form.valorAtual}
+                  onChange={handleValores}
+                  name="valorAtual"
+                  id="floating_last_name"
+                  className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                  placeholder=" "
+                  required
+                />
+                <label
+                  htmlFor="floating_last_name"
+                  className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:left-0 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
+                >
+                  Valor Atual
+                </label>
+              </div>
+              <div className="relative z-0 w-full mb-6 group">
+                <input
+                  type="number"
+                  value={form.parcelasAtuais}
+                  onChange={handleValores}
+                  name="parcelasAtuais"
+                  id="floating_last_name"
+                  className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                  placeholder=" "
+                  required
+                />
+                <label
+                  htmlFor="floating_last_name"
+                  className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:left-0 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
+                >
+                  Parcelas atuais
+                </label>
+              </div>
+              {/* PREENCHIMENTO DO BENEFICIÁRIO /////////////////////////////////////////////////////////////////////////////////////////////////////////////*/}
+              <p className="block text-gray-700 text-sm font-bold mb-2">
+                Preenchimento Beneficiário:
+              </p>
+              <br></br>
+              <div className="relative z-0 w-full mb-6 group">
+                <input
+                  type="number"
+                  value={form.vAutor}
+                  onChange={handleValores}
+                  name="vAutor"
+                  id="floating_last_name"
+                  className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                  placeholder=" "
+                  required
+                />
+                <label
+                  htmlFor="floating_last_name"
+                  className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:left-0 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
+                >
+                  Valor principal do autor
+                </label>
+              </div>
+              <div className="relative z-0 w-full mb-6 group">
+                <input
+                  type="number"
+                  value={form.jurosAutor}
+                  onChange={handleValores}
+                  name="juAutor"
+                  id="floating_last_name"
+                  className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                  placeholder=" "
+                  required
+                />
+                <label
+                  htmlFor="floating_last_name"
+                  className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:left-0 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
+                >
+                  Juros Autor
+                </label>
+              </div>
+              <div className="relative z-0 w-full mb-6 group">
+                <input
+                  type="number"
+                  value={form.vAdvogado}
+                  onChange={handleValores}
+                  name="vAdvogado"
+                  id="floating_last_name"
+                  className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                  placeholder=" "
+                  required
+                />
+                <label
+                  htmlFor="floating_last_name"
+                  className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:left-0 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
+                >
+                  Valor principal do advogado
+                </label>
+              </div>
+              <div className="relative z-0 w-full mb-6 group">
+                <input
+                  type="number"
+                  value={form.jurosAdvogado}
+                  onChange={handleValores}
+                  name="jurosAdvogado"
+                  id="floating_last_name"
+                  className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                  placeholder=" "
+                  required
+                />
+                <label
+                  htmlFor="floating_last_name"
+                  className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:left-0 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
+                >
+                  Juros Advogados
+                </label>
+              </div>
+              <p className="block text-gray-700 text-sm font-bold mb-2">
+                Valor para Herdeiros(Em construção):
+              </p>
+              <br></br>
+              <div className="relative z-0 w-full mb-6 group">
+                <input
+                  type="number"
+                  value={form.vHerdeiro}
+                  onChange={handleValores}
+                  name="vHerdeiro"
+                  id="floating_last_name"
+                  className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                  placeholder=" "
+                  required
+                />
+                <label
+                  htmlFor="floating_last_name"
+                  className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:left-0 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
+                >
+                  Valor principal herdeiro
+                </label>
+              </div>
+              <div className="relative z-0 w-full mb-6 group">
+                <input
+                  type="number"
+                  value={form.jurosHerdeiro}
+                  onChange={handleValores}
+                  name="jurosHerdeiro"
+                  id="floating_last_name"
+                  className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                  placeholder=" "
+                  required
+                />
+                <label
+                  htmlFor="floating_last_name"
+                  className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:left-0 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
+                >
+                  Juros do herdeiro
+                </label>
+              </div>
+            </div>{" "}
+            {/* <div className="relative z-0 w-full mb-6 group">
+   
+            <Datepicker
+                value={value}
+                onChange={handleValueChange}
             />
-          </a>
+</div>*/}
+            <div className="gap-x-10">
+              <button
+                type="submit"
+                onClick={handleCalcular}
+                className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+              >
+                Calcular
+              </button>{" "}
+              <button
+                type="submit"
+                onClick={handleLimpar}
+                className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+              >
+                Limpar
+              </button>
+            </div>
+          </form>
+
+          <br></br>
+          <br></br>
+
+          {/* CÓDIGO DA CONSULTA AO PJE /////////////////////////////////////////////////////////////////////////////////////////////*/}
         </div>
       </div>
+      <div className="w-full max-w-xs">
+        <p className="block text-gray-700 text-sm font-bold mb-2">
+          CONSULTAR DADOS DO PROCESSO:
+        </p>
+          <p>(Funcionando em desenvolvimento)</p>
+        <br></br>
 
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-full sm:before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full sm:after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800 hover:dark:bg-opacity-30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50 text-balance`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
+        <form className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+          <div className="mb-4">
+            <label
+              className="block text-gray-700 text-sm font-bold mb-2"
+              htmlFor="processo"
+            >
+              Processo:
+            </label>
+            <input
+              value={formProc.processo}
+              onChange={handleProc}
+              name="processo"
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              id="processo"
+              type="text"
+              placeholder="Processo"
+            />
+          </div>
+          <div className="mb-4">
+            <label
+              className="block text-gray-700 text-sm font-bold mb-2"
+              htmlFor="usuario"
+            >
+              Usuário do PJE
+            </label>
+            <input
+              value={formProc.usuario}
+              onChange={handleProc}
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              id="usuario"
+              type="text"
+              name="usuario"
+              placeholder="Usuário"
+            />
+          </div>
+          <div className="mb-6">
+            <label
+              className="block text-gray-700 text-sm font-bold mb-2"
+              htmlFor="password"
+            >
+              Senha
+            </label>
+            <input
+              name="password"
+              value={formProc.password}
+              onChange={handleProc}
+              className="shadow appearance-none border  rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline"
+              id="password"
+              type="password"
+              placeholder="Senha"
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <button
+              className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+              type="button"
+              onClick={handleBuscaDados}
+            >
+              Consultar
+            </button>
+          </div>
+        </form>
       </div>
     </main>
   );
