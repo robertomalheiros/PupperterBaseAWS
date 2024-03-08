@@ -1,11 +1,18 @@
-
+"use server"
 let chromium = require("@sparticuz/chromium")
 let puppeteer = require("puppeteer-core");
 
-// Aguarda o download do Chromium
-const executablePath = await chromium.executablePath();
 
-// Agora você pode lançar o navegador
+
+async function BuscaDados(usuario, password, processo) {
+
+// Aguarda o download do Chromium
+console.log("Iniciando o download do Chromium...");
+const executablePath = await chromium.executablePath();
+console.log("Download do Chromium concluído.");
+
+
+console.log("Iniciando o lançamento do navegador...");
 let browserPromise = puppeteer.launch({
   args: chromium.args,
   defaultViewport: chromium.defaultViewport,
@@ -13,9 +20,8 @@ let browserPromise = puppeteer.launch({
   headless: chromium.headless,
   ignoreHTTPSErrors: true,
 });
+console.log("Lançamento do navegador concluído.");
 
-
-async function BuscaDados(usuario, password, processo) {
   console.log(`Processo: ${processo}`);
 
   let dadosFecht = {
