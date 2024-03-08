@@ -3,13 +3,13 @@ let chromium = require("@sparticuz/chromium")
 let puppeteer = require("puppeteer-core");
 
 // Aguarda o download do Chromium
-const executablePath = await chromium.executablePath;
+const executablePath = await chromium.executablePath();
 
 // Agora você pode lançar o navegador
 let browserPromise = puppeteer.launch({
   args: chromium.args,
   defaultViewport: chromium.defaultViewport,
-  executablePath: await chromium.executablePath,
+  executablePath: executablePath,
   headless: chromium.headless,
   ignoreHTTPSErrors: true,
 });
