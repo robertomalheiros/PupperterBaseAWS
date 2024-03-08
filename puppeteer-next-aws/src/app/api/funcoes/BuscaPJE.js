@@ -1,17 +1,27 @@
-const chromium = require("@sparticuz/chromium");
-const puppeteer = require("puppeteer-core");
 
-exports.BuscaDados = async (event, context, callback) => {
+export default async function BuscaDados(usuario, password, processo) {
+  const chromium = require("@sparticuz/chromium");
+const puppeteer = require("puppeteer-core");
   let result = null;
   let browser = null;
+
+
+  let dadosFecht = {
+    DIB: "",
+    DIP: "",
+    valor: "",
+    sentenca: {},
+    contestacao: {},
+  };
+
+
 
   try {
 
  browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
-
- executablePath: await chromium.executablePath(),
+      executablePath: await chromium.executablePath(),
       headless: chromium.headless,
       ignoreHTTPSErrors: true,
     });
@@ -211,7 +221,7 @@ exports.BuscaDados = async (event, context, callback) => {
     await pagProcesso.close();
     return dadosFecht;
   } catch (error) {
-    return callback(error);
+    return error
   } finally {
     if (browser !== null) {
       await browser.close();
