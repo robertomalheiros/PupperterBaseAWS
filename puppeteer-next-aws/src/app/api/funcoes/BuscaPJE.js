@@ -1,33 +1,70 @@
-const chromium = require("@sparticuz/chromium");
-const puppeteer = require("puppeteer-core");
+import { PT_Mono } from "next/font/google";
 
-exports.BuscaDados = async (event, context, callback) => {
-  let result = null;
-  let browser = null;
+//import * as dotenv from "dotenv";
+import { NextResponse } from "next/server";
 
-  const usuario = event.usuario;
-  const password = event.password;
-  const processo = event.processo;
+let puppeteer;
+let browser;
+let chromium;
+//dotenv.config();
+
+async function launchBrowser() {
+  console.log(`Variável de ambiente: ${process.env.AWS_LAMBDA_FUNCTION_VERSION}`)
+    if (process.env.AWS_LAMBDA_FUNCTION_VERSION) {
+      console.log("AWS");
+        // AWS Lambda
+        chromium = require("@sparticuz/chromium")
+        puppeteer = require("puppeteer-core");
+        browser = await chromium.puppeteer.launch({
+            args: chromium.args,
+            defaultViewport: chromium.defaultViewport,
+            executablePath: await chromium.executablePath,
+            headless: chromium.headless,
+            ignoreHTTPSErrors: true,
+        });
+    } else if (process.env.DOCKER) {
+        // Docker
+        console.log("Docker");
+        puppeteer = require("puppeteer");
+        browser = await puppeteer.launch({
+            args: [
+                "--disable-setuid-sandbox",
+                "--no-sandbox",
+                "--single-process",
+                "--no-zygote",
+            ],
+            executablePath:
+                process.env.NODE_ENV === "production"
+                    ? process.env.PUPPETEER_EXECUTABLE_PATH
+                    : puppeteer.executablePath(),
+        });
+
+    } else {
+        // Local development
+        puppeteer = require("puppeteer");
+        browser = await puppeteer.launch(
+          {
+            headless: false,
+        }
+        );
+        console.log("Local");
+    }
+}
+
+await launchBrowser().catch(console.error);
+console.log(`Instancia de Chromium: ${chromium}`)
+async function BuscaDados(usuario, password, processo) {
+  console.log(`Processo: ${processo}`);
+
   let dadosFecht = {
+    sentenca: [],
+    contestacao: [],
     DIB: "",
     DIP: "",
     valor: "",
-    sentenca: {},
-    contestacao: {},
   };
-
-
-
   try {
-
- browser = await puppeteer.launch({
-      args: chromium.args,
-      defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(),
-      headless: chromium.headless,
-      ignoreHTTPSErrors: true,
-    });
-
+    await launchBrowser().catch(console.error);
     const page = await browser.newPage();
     const url = "https://pje1g.trf1.jus.br/pje/login.seam";
     await page.goto(url, { waitUntil: "domcontentloaded" });
@@ -223,12 +260,8 @@ exports.BuscaDados = async (event, context, callback) => {
     await pagProcesso.close();
     return dadosFecht;
   } catch (error) {
-    return callback(error);
-  } finally {
-    if (browser !== null) {
-      await browser.close();
-    }
+    console.log(error);
   }
+}
 
-  return callback(null, result);
-};
+export default BuscaDados;

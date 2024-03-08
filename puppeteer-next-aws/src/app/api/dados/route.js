@@ -6,7 +6,7 @@ export async function POST(request, response) {
     const { processo, usuario, password } = await request.json();
 
     const Dados = await BuscaDados(usuario, password, processo);
-
+    console.log("Retorno da função BuscaDados: ", Dados);
     const DadosJson = JSON.stringify(Dados);
     return NextResponse.json({ message: "OK", DadosJson }, { status: 201 });
   } catch (error) {
