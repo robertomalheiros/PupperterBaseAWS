@@ -1,7 +1,10 @@
+const chromium = require("@sparticuz/chromium");
+const puppeteer = require("puppeteer-core");
+
+
 
 export default async function BuscaDados(usuario, password, processo) {
-  const chromium = require("@sparticuz/chromium");
-const puppeteer = require("puppeteer-core");
+
   let result = null;
   let browser = null;
 
