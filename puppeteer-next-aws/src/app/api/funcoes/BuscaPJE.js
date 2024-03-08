@@ -3,13 +3,13 @@ let chromium = require("@sparticuz/chromium")
 let puppeteer = require("puppeteer-core");
 
 // Aguarda o download do Chromium
-const executablePath = chromium.executablePath;
+const executablePath = await chromium.executablePath;
 
 // Agora você pode lançar o navegador
 let browserPromise = puppeteer.launch({
   args: chromium.args,
   defaultViewport: chromium.defaultViewport,
-  executablePath: executablePath,
+  executablePath: await chromium.executablePath,
   headless: chromium.headless,
   ignoreHTTPSErrors: true,
 });
@@ -27,7 +27,9 @@ async function BuscaDados(usuario, password, processo) {
   };
   try {
     const browser = await browserPromise;
+    console.log("Passei do browser")
     const page = await browser.newPage();
+
     const url = "https://pje1g.trf1.jus.br/pje/login.seam";
     await page.goto(url, { waitUntil: "domcontentloaded" });
     await page.setViewport({ width: 1080, height: 1024 });
