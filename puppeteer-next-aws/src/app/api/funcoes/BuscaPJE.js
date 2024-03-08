@@ -6,13 +6,11 @@ let puppeteer = require("puppeteer-core");
 
 async function BuscaDados(usuario, password, processo) {
 
-
-
 console.log("Iniciando o lançamento do navegador...");
 let browser = await puppeteer.launch({
   args: chromium.args,
   defaultViewport: chromium.defaultViewport,
-  executablePath: chromium.executablePath(),
+  executablePath: await chromium.executablePath(),
   headless: chromium.headless,
   ignoreHTTPSErrors: true,
 });
