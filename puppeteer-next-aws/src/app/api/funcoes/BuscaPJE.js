@@ -1,14 +1,18 @@
 import { PT_Mono } from "next/font/google";
-
+chromium = require("@sparticuz/chromium")
+puppeteer = require("puppeteer-core");
 //import * as dotenv from "dotenv";
 import { NextResponse } from "next/server";
 
-let puppeteer;
-let browser;
-let chromium;
-//dotenv.config();
 
-async function launchBrowser() {
+let browser = await puppeteer.launch({
+  args: chromium.args,
+  defaultViewport: chromium.defaultViewport,
+  executablePath: await chromium.executablePath,
+  headless: chromium.headless,
+  ignoreHTTPSErrors: true,
+});
+/* async function launchBrowser() {
   console.log(`Variável de ambiente: ${process.env.AWS_LAMBDA_FUNCTION_VERSION}`)
     if (process.env.AWS_LAMBDA_FUNCTION_VERSION) {
       console.log("AWS");
@@ -52,8 +56,8 @@ async function launchBrowser() {
     }
 }
 
-await launchBrowser().catch(console.error);
-console.log(`Instancia de Chromium: ${chromium}`)
+await launchBrowser().catch(console.error); */
+//console.log(`Instancia de Chromium: ${chromium}`)
 async function BuscaDados(usuario, password, processo) {
   console.log(`Processo: ${processo}`);
 
