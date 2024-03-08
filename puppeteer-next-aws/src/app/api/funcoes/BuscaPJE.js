@@ -15,13 +15,17 @@ async function launchBrowser() {
         // AWS Lambda
         chromium = require("@sparticuz/chromium")
         puppeteer = require("puppeteer-core");
-        browser = await chromium.puppeteer.launch({
-            args: chromium.args,
-            defaultViewport: chromium.defaultViewport,
-            executablePath: await chromium.executablePath,
-            headless: chromium.headless,
-            ignoreHTTPSErrors: true,
-        });
+        browser = await puppeteer.launch({
+          args: chromium.args,
+          defaultViewport: chromium.defaultViewport,
+          executablePath: await chromium.executablePath(
+          process.env.AWS_EXECUTION_ENV
+          ? '/opt/nodejs/node_modules/@sparticuz/chromium/bin'
+          : undefined,
+          ),
+          headless: chromium.headless,
+          ignoreHTTPSErrors: true,
+          });
     } else if (process.env.DOCKER) {
         // Docker
         console.log("Docker");
