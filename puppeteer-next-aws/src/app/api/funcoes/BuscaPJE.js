@@ -6,13 +6,14 @@ let puppeteer = require("puppeteer-core");
 const executablePath = chromium.executablePath;
 
 // Agora você pode lançar o navegador
-let browser = puppeteer.launch({
+let browserPromise = puppeteer.launch({
   args: chromium.args,
   defaultViewport: chromium.defaultViewport,
   executablePath: executablePath,
   headless: chromium.headless,
   ignoreHTTPSErrors: true,
 });
+
 
 async function BuscaDados(usuario, password, processo) {
   console.log(`Processo: ${processo}`);
@@ -25,6 +26,7 @@ async function BuscaDados(usuario, password, processo) {
     valor: "",
   };
   try {
+    const browser = await browserPromise;
     const page = await browser.newPage();
     const url = "https://pje1g.trf1.jus.br/pje/login.seam";
     await page.goto(url, { waitUntil: "domcontentloaded" });
