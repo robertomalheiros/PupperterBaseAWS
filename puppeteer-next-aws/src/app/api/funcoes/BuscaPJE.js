@@ -1,14 +1,13 @@
 const chromium = require("@sparticuz/chromium");
 const puppeteer = require("puppeteer-core");
 
-
-
-export default async function BuscaDados(usuario, password, processo) {
-
+exports.BuscaDados = async (event, context, callback) => {
   let result = null;
   let browser = null;
 
-
+  const usuario = event.usuario;
+  const password = event.password;
+  const processo = event.processo;
   let dadosFecht = {
     DIB: "",
     DIP: "",
@@ -224,7 +223,7 @@ export default async function BuscaDados(usuario, password, processo) {
     await pagProcesso.close();
     return dadosFecht;
   } catch (error) {
-    return error
+    return callback(error);
   } finally {
     if (browser !== null) {
       await browser.close();
